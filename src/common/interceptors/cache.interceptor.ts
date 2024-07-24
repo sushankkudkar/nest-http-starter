@@ -13,26 +13,19 @@ import {
   Logger,
   NestInterceptor,
   RequestMethod,
-} from '@nestjs/common'
-import { HttpAdapterHost, Reflector } from '@nestjs/core'
+} from '@nestjs/common';
+import { HttpAdapterHost, Reflector } from '@nestjs/core';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { REDIS } from '~/app.config';
+import * as META from '~/constants/meta.constant';
+import * as SYSTEM from '~/constants/system.constant';
+import { CacheService } from '~/processors/cache/cache.service';
+import { getNestExecutionContextRequest } from '~/transformers/get-req.transformer';
 
-import { Observable, of } from 'rxjs'
-import { tap } from 'rxjs/operators'
-
-import { REDIS } from '~/app.config'
-import * as META from '~/constants/meta.constant'
-import * as SYSTEM from '~/constants/system.constant'
-import { CacheService } from '~/processors/cache/cache.service'
-import { getNestExecutionContextRequest } from '~/transformers/get-req.transformer'
-
-/**
- * HttpCacheInterceptor class.
- * @class
- * @description Intercepts HTTP requests to apply caching for GET requests.
- */
 @Injectable()
 export class HttpCacheInterceptor implements NestInterceptor {
-  private readonly logger = new Logger(HttpCacheInterceptor.name)
+  private readonly logger = new Logger(HttpCacheInterceptor.name);
 
   constructor(
     private readonly cacheManager: CacheService,
@@ -40,81 +33,59 @@ export class HttpCacheInterceptor implements NestInterceptor {
     private readonly httpAdapterHost: HttpAdapterHost,
   ) {}
 
-  /**
-   * Intercepts the request and handles caching logic.
-   * @param context Execution context for the request.
-   * @param next Call handler to proceed with the request.
-   * @returns An observable that either returns cached data or the response from the call handler.
-   */
   async intercept(
     context: ExecutionContext,
     next: CallHandler<any>,
   ): Promise<Observable<any>> {
-    // Proceed with the call handler if caching is disabled or method is not GET
-    const call$ = next.handle()
+    const call$ = next.handle();
 
     if (REDIS.disableApiCache) {
-      return call$
+      return call$;
     }
 
-    const request = this.getRequest(context)
+    const request = this.getRequest(context);
 
-    // Only cache GET requests
     if (request.method.toLowerCase() !== 'get') {
-      return call$
+      return call$;
     }
 
-    const handler = context.getHandler()
-    const isCacheDisabled = this.reflector.get(META.HTTP_CACHE_DISABLE, handler)
+    const handler = context.getHandler();
+    const isCacheDisabled = this.reflector.get(META.HTTP_CACHE_DISABLE, handler);
+
     if (isCacheDisabled) {
-      return call$
+      return call$;
     }
 
-    const key = this.trackBy(context) || `mx-api-cache:${request.url}`
-    const metaTTL = this.reflector.get(META.HTTP_CACHE_TTL_METADATA, handler)
-    const ttl = metaTTL || REDIS.httpCacheTTL
+    const key = this.trackBy(context) || `mx-api-cache:${request.url}`;
+    const ttl = this.reflector.get(META.HTTP_CACHE_TTL_METADATA, handler) || 100000000000;
 
     try {
-      const cachedValue = await this.cacheManager.get(key)
+      let cachedValue = await this.cacheManager.get(key);
 
       return cachedValue
         ? of(cachedValue)
         : call$.pipe(
-            tap((response) => {
+            tap(async (response) => {
               if (response) {
-                this.cacheManager.set(key, response, ttl)
+                await this.cacheManager.set(key, response, ttl);
               }
             }),
-          )
+          );
     } catch (error) {
-      this.logger.error('Cache retrieval or storage failed', error)
-      return call$
+      this.logger.error('Cache retrieval or storage failed', error);
+      return call$;
     }
   }
 
-  /**
-   * Determines the cache key to use based on request context and handler metadata.
-   * @param context Execution context for the request.
-   * @returns The cache key if applicable, otherwise undefined.
-   */
   private trackBy(context: ExecutionContext): string | undefined {
-    const request = this.getRequest(context)
-    const httpServer = this.httpAdapterHost.httpAdapter
-    const isHttpApp = Boolean(httpServer?.getRequestMethod)
-    const isGetRequest =
-      isHttpApp &&
-      httpServer.getRequestMethod(request) === RequestMethod[RequestMethod.GET]
-    const cacheKey = this.reflector.get(
-      META.HTTP_CACHE_KEY_METADATA,
-      context.getHandler(),
-    )
+    const request = this.getRequest(context);
+    const httpServer = this.httpAdapterHost.httpAdapter;
+    const isHttpApp = Boolean(httpServer?.getRequestMethod);
+    const isGetRequest = isHttpApp && httpServer.getRequestMethod(request) === RequestMethod.GET;
+    const cacheKey = this.reflector.get(META.HTTP_CACHE_KEY_METADATA, context.getHandler());
 
-    return isHttpApp && isGetRequest && cacheKey ? cacheKey : undefined
+    return isHttpApp && isGetRequest && cacheKey ? cacheKey : undefined;
   }
 
-  /**
-   * Retrieves the request object from the execution context.
-   * @returns A function to get the request from the execution context.
-   */
-  private getRequest = getNestExecutionContextRequest.bind(this)
+  private getRequest = getNestExecutionContextRequest.bind(this);
 }

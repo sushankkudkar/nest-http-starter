@@ -15,7 +15,6 @@ import { AllExceptionsFilter } from './common/filters/any-exception.filter'
 import { HttpCacheInterceptor } from './common/interceptors/cache.interceptor'
 import { JSONTransformerInterceptor } from './common/interceptors/json-transformer.interceptor'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
-import { RedisModule } from './processors/redis/redis.module'
 import { CacheModule } from './processors/cache/cache.module'
 import { DatabaseModule } from './processors/database/database.module'
 import { HelperModule } from './processors/helper/helper.module'
@@ -23,9 +22,8 @@ import { AppConfigModule } from './processors/app-config/app-config.module'
 
 @Module({
   imports: [
-    RedisModule,
-    DatabaseModule,
     CacheModule,
+    DatabaseModule,
     HelperModule,
     LoggerModule,
     AppConfigModule,

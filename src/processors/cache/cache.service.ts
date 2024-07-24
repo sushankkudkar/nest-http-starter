@@ -1,37 +1,47 @@
 import { Cache } from 'cache-manager';
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { RedisService } from '~/processors/redis/redis.service';
 import { Redis } from 'ioredis';
 
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+
+// Cache client manager
+
+// Accessor
+export type TCacheKey = string;
+export type TCacheResult<T> = Promise<T | undefined>;
+
+/**
+ * @class CacheService
+ * @classdesc Handles caching service
+ * @example CacheService.get(CacheKey).then()
+ * @example CacheService.set(CacheKey).then()
+ */
 @Injectable()
 export class CacheService {
-  private readonly logger = new Logger(CacheService.name);
-  private cache: Cache;
+  private cache!: Cache;
+  private logger = new Logger(CacheService.name);
 
-  constructor(
-    @Inject(CACHE_MANAGER) cache: Cache,
-    private readonly redisService: RedisService
-  ) {
+  constructor(@Inject(CACHE_MANAGER) cache: Cache) {
     this.cache = cache;
-    this.redisService.getClient().on('ready', () => {
+    this.redisClient.on('ready', () => {
       this.logger.log('Redis is ready!');
     });
   }
 
   private get redisClient(): Redis {
-    return this.redisService.getClient() as unknown as Redis;
+    // @ts-expect-error
+    return this.cache.store.getClient();
   }
 
-  public async get<T>(key: string): Promise<T | undefined> {
-    return this.cache.get(key);
+  public async get<T>(key: TCacheKey): TCacheResult<T> {
+    return await this.cache.get(key);
   }
 
-  public async set(key: string, value: any, ttl: number = 0): Promise<void> {
-    return this.cache.set(key, value, ttl);
+  public async set(key: TCacheKey, value: any, ttl?: number | undefined) {
+    return await this.cache.set(key, value, ttl || 0);
   }
 
-  public getClient(): Redis {
+  public getClient() {
     return this.redisClient;
   }
 }

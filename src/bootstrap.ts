@@ -28,7 +28,6 @@ export async function bootstrap() {
 }
 
 function configureCors(app: NestFastifyApplication) {
-  console.log('Came inside configureCors')
   const Origin = CROSS_DOMAIN.allowedOrigins
   const hosts = Origin.filter((host) => host !== '*').map(
     (host) => new RegExp(host, 'i'),
@@ -48,8 +47,6 @@ function configureCors(app: NestFastifyApplication) {
 }
 
 function setupGlobalConfig(app: NestFastifyApplication) {
-  console.log('Came inside setupGlobalConfig')
-
   if (!isDev) {
     app.useGlobalInterceptors(new LoggingInterceptor())
   }
@@ -67,8 +64,6 @@ function setupGlobalConfig(app: NestFastifyApplication) {
 }
 
 async function startServer(app: NestFastifyApplication) {
-  console.log('Came inside startServer')
-
   await app.listen(+PORT, '0.0.0.0', async (err) => {
     if (err) {
       logger.error(`Error starting server: ${err.message}`)
@@ -84,8 +79,6 @@ async function startServer(app: NestFastifyApplication) {
 }
 
 function setupHotModuleReplacement(app: NestFastifyApplication) {
-  console.log('Came inside setupHotModuleReplacement')
-
   if (module.hot) {
     module.hot.accept()
     module.hot.dispose(() => app.close())

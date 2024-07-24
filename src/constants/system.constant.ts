@@ -18,6 +18,3 @@ export const DB_CONNECTION_TOKEN = '__db_connection_token__'
 
 // Suffix used for database model tokens
 export const DB_MODEL_TOKEN_SUFFIX = '__db_model_token_suffix__'
-
-// Token for redis database connection
-export const REDIS_CONNECTION_TOKEN = '__redis_connection_token__'

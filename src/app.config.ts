@@ -22,9 +22,9 @@ export const REDIS = {
   host: 'master.staging-tf-rep-group-1.qdxpl3.aps1.cache.amazonaws.com',
   port: 6379,
   password: 'pwQ3wjUMdVN9Egz9PZ3R',
-  ttl: 1000000,
   httpCacheTTL: 5,
   max: 5,
+  tls: {},
   disableApiCache: isDev && !process.env.ENABLE_CACHE_DEBUG,
 }
 

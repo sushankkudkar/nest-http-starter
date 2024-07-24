@@ -33,16 +33,12 @@ class DatabaseProvider {
       return mongoose.connect(uri);
     };
 
-    const color = (str: TemplateStringsArray, ..._args: any[]) => {
-      return str.map((s) => s).join('');
-    };
-
     mongoose.connection.on('connecting', () => {
-      logger.info(Badge, color`connecting...`);
+      logger.info(Badge, `connecting...`);
     });
 
     mongoose.connection.on('open', () => {
-      logger.info(Badge, color`connected successfully!`);
+      logger.info(Badge, `connected successfully!`);
       if (reconnectionTask) {
         clearTimeout(reconnectionTask);
         reconnectionTask = null;

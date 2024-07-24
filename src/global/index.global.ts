@@ -5,7 +5,7 @@
  * @description Registers global utilities and settings for the application.
  */
 
-import { consola } from './consola.global'
+ import { consola } from './consola.global'
 import './dayjs.global'
 import { isDev } from './env.global'
 
@@ -22,7 +22,7 @@ function registerGlobal() {
   Object.assign(globalThis, {
     isDev,
     consola,
-  })
+   })
 
   // Override console.debug to use consola if in development mode
   console.debug = (...rest: any[]) => {
